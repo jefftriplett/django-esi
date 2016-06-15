@@ -8,19 +8,20 @@ Replace this with more appropriate tests for your application.
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
-from django.template import RequestContext, loader
+from django.template import Context, loader, RequestContext, Template, TemplateSyntaxError
 from django.test import TestCase, Client
+
 try:
     from django.test import RequestFactory
 except:
     RequestFactory = None
-from django.template import Template, Context, RequestContext, TemplateSyntaxError
-from esi.views import esi, get_object
+
+from esi.views import get_object
 
 
 class EsiTest(TestCase):
     def setUp(self):
-        self.user, created = User.objects.get_or_create(username='testme', first_name='test',email='test@test.com', is_active=True)
+        self.user, created = User.objects.get_or_create(username='testme', first_name='test', email='test@test.com', is_active=True)
         self.kwargs = {
             'app_label': self.user._meta.app_label,
             'model_name': self.user._meta.module_name,
@@ -29,7 +30,7 @@ class EsiTest(TestCase):
             'template': 'includes/lists/auth.user.html'
         }
         self.old_setting = {}
-    
+
     def set_setting(self, setting, value):
         try:
             if getattr(settings, setting):
@@ -37,13 +38,13 @@ class EsiTest(TestCase):
         except AttributeError:
             self.old_setting.update({setting: None})
         setattr(settings, setting, value)
-    
+
     def restore_setting(self, setting, default=None):
         if setting in self.old_setting.keys():
             setattr(settings, setting, self.old_setting[setting])
         else:
             setattr(settings, setting, default)
-    
+
     def test_esi_templatetag(self):
         template = """
         {% load esi %}
@@ -54,12 +55,12 @@ class EsiTest(TestCase):
         rendered = t.render(c).strip()
         args = self.kwargs.copy()
         del(args['template'])
-        args.update({'template':'includes/lists'})
-        url = reverse('esi',kwargs=args)
-        
-        comparison = """<esi:include src="%s" />"""%(url)
+        args.update({'template': 'includes/lists'})
+        url = reverse('esi', kwargs=args)
+
+        comparison = """<esi:include src="%s" />""" % (url)
         self.assertEqual(rendered, comparison)
-    
+
     def test_esi_templatetag_debug(self):
         """TODO: Figure this out."""
         # template = """
@@ -73,35 +74,33 @@ class EsiTest(TestCase):
         # del(args['template'])
         # args.update({'template':'includes/lists'})
         # url = reverse('esi',kwargs=args)
-        #     
+        #
         # comparison = """<esi:include src="%s" />"""%(url)
         # self.assertEqual(rendered, comparison)
         # self.restore_setting('DEBUG', False)
         pass
-        
-        
-    
+
     def test_esi_templatetag_no_path_error(self):
         template = """
         {% load esi %}
         {% esi for object path %}
         """
         self.assertRaises(TemplateSyntaxError, Template, (template))
-    
+
     def test_esi_templatetag_no_timeout_error(self):
         template = """
         {% load esi %}
         {% esi for object path 'whee/bleep' timeout %}
         """
         self.assertRaises(TemplateSyntaxError, Template, (template))
-    
+
     def test_esi_templatetag_no_template_error(self):
         template = """
         {% load esi %}
         {% esi for object template  %}
         """
         self.assertRaises(TemplateSyntaxError, Template, (template))
-    
+
     def test_get_object(self):
         """
         Tests that get_object returns an object and the correct model for that object.
@@ -109,28 +108,28 @@ class EsiTest(TestCase):
         object, model = get_object(self.kwargs['app_label'], self.kwargs['model_name'], self.kwargs['object_id'])
         self.assertEqual(object, self.user)
         self.assertEqual(model, User)
-    
+
     def test_esi_view(self):
         """
         tests that the esi view sets the timeout cache header properly and renders the template correctly.
         esi(request, app_label=None, model_name=None, object_id=None, timeout=1200, template=None)
         """
         client = Client()
-        url = reverse('esi',kwargs=self.kwargs)
+        url = reverse('esi', kwargs=self.kwargs)
         r = client.get(url)
         age = int(r._headers['cache-control'][1].split("=")[1])
         self.assertEqual(self.kwargs['timeout'], age)
-        
+
         # render the template and compare them.
-        t = loader.select_template([self.kwargs['template'],])
+        t = loader.select_template([self.kwargs['template'], ])
         context = {
             'object': self.user,
         }
         c = RequestContext(r.request, context)
         rendered = t.render(c)
-        
+
         self.assertEqual(r.content, rendered)
-    
+
     def test_esi_list_view(self):
         """
         tests that the esi view sets the timeout cache header properly and renders the template correctly.
@@ -138,14 +137,13 @@ class EsiTest(TestCase):
         """
         client = Client()
         args = self.kwargs.copy()
-        args.update({'template':'includes/lists'})
-        
-        url = reverse('esi',kwargs=args)
+        args.update({'template': 'includes/lists'})
+
+        url = reverse('esi', kwargs=args)
         r = client.get(url)
         age = int(r._headers['cache-control'][1].split("=")[1])
         self.assertEqual(self.kwargs['timeout'], age)
-        
-    
+
     def test_esi_view_default_directory(self):
         """
         tests that the esi view sets the timeout cache header properly and renders the template correctly.
@@ -154,12 +152,12 @@ class EsiTest(TestCase):
         args = self.kwargs.copy()
         del(args['template'])
         self.set_setting('ESI_DEFAULT_DIRECTORY', 'includes/lists')
-        url = reverse('esi',kwargs=args)
+        url = reverse('esi', kwargs=args)
         r = client.get(url)
         self.restore_setting('ESI_DEFAULT_DIRECTORY')
         age = int(r._headers['cache-control'][1].split("=")[1])
         self.assertEqual(self.kwargs['timeout'], age)
-        
+
     def test_esi_default_template(self):
         """
         tests that the esi view sets the timeout cache header properly and renders the template correctly.
@@ -168,10 +166,10 @@ class EsiTest(TestCase):
         args = self.kwargs.copy()
         del(args['template'])
         self.set_setting('ESI_DEFAULT_TEMPLATE', 'esi_test/esi.html')
-        url = reverse('esi',kwargs=args)
+        url = reverse('esi', kwargs=args)
         r = client.get(url)
         self.restore_setting('ESI_DEFAULT_TEMPLATE')
         age = int(r._headers['cache-control'][1].split("=")[1])
         self.assertEqual(self.kwargs['timeout'], age)
-    
-        #self.assertEqual(r.content, rendered)
+
+        # self.assertEqual(r.content, rendered)
