@@ -1,7 +1,6 @@
 # Create your views here.
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
-from django.core.xheaders import populate_xheaders
 from django.http import Http404, HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render_to_response
 from django.template import RequestContext, loader
@@ -96,6 +95,10 @@ def esi(request, app_label=None, model_name=None, object_id=None, timeout=900, t
     }
     c = RequestContext(request, context)
     response = HttpResponse(t.render(c))
-    populate_xheaders(request, response, model, getattr(obj, model._meta.pk.name))
+    try:
+        from django.core.xheaders import populate_xheaders
+        populate_xheaders(request, response, model, getattr(obj, model._meta.pk.name))
+    except ImportError:
+        pass
     patch_cache_control(response, max_age=timeout)
     return response
