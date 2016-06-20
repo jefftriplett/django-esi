@@ -47,7 +47,7 @@ class EsiTest(TestCase):
 
     def test_esi_templatetag(self):
         template = """
-        {% load esi %}
+        {% load esi_tags %}
         {% esi for object path 'includes/lists' timeout 1200 %}
         """
         t = Template(template)
@@ -64,7 +64,7 @@ class EsiTest(TestCase):
     def test_esi_templatetag_debug(self):
         """TODO: Figure this out."""
         # template = """
-        # {% load esi %}
+        # {% load esi_tags %}
         # {% esi for object path 'includes/lists' timeout 1200 %}
         # """
         # self.set_setting('DEBUG', True)
@@ -82,21 +82,21 @@ class EsiTest(TestCase):
 
     def test_esi_templatetag_no_path_error(self):
         template = """
-        {% load esi %}
+        {% load esi_tags %}
         {% esi for object path %}
         """
         self.assertRaises(TemplateSyntaxError, Template, (template))
 
     def test_esi_templatetag_no_timeout_error(self):
         template = """
-        {% load esi %}
+        {% load esi_tags %}
         {% esi for object path 'whee/bleep' timeout %}
         """
         self.assertRaises(TemplateSyntaxError, Template, (template))
 
     def test_esi_templatetag_no_template_error(self):
         template = """
-        {% load esi %}
+        {% load esi_tags %}
         {% esi for object template  %}
         """
         self.assertRaises(TemplateSyntaxError, Template, (template))
