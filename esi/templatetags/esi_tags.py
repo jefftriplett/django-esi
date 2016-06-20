@@ -41,6 +41,7 @@ class EsiNode(template.Node):
             return esi_views.esi(context['request'], **kwargs).content
 
 
+@register.tag('esi')
 def do_create_esi(parser, token):
     """
     Creates an esi out of an object.
@@ -84,4 +85,3 @@ def do_create_esi(parser, token):
     return EsiNode(**kwargs)
 
 
-register.tag('esi', do_create_esi)
